@@ -1,0 +1,19 @@
+Unbalance validataion 
+weighted-cross-entropy -> wy
+E[val_loss]=balanced_population_loss
+
+
+Balance validation
+cross-entropy loss -> dy and ly 
+
+Goal: DEO
+xent_loss1 = xent_loss2
+sum_{I=1}^K |xent_loss_i - xent_loss_avg|
+sum_{I=1}^K |acc_i - acc_avg|
+different validation goal
+
+validation objective:
+make two class have same accuracy:
+if we know when Xent1 = 2 xent2, we have acc1= acc2
+we can optimize: |Xent1 - 2 xent2|
+
