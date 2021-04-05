@@ -73,8 +73,8 @@ wy=torch.ones([num_classes],dtype=torch.float32,device=device)
 #ly.requires_grad=True
 #wy.requires_grad=True
 
-train_optimizer = optim.Adam(params=model.parameters(),lr=lr)
-val_optimizer = optim.Adam(params=[{'params':dy},{'params':ly},{'params':wy}],lr=hp_lr)
+train_optimizer = optim.SGD(params=model.parameters(),lr=lr)
+val_optimizer = optim.SGD(params=[{'params':dy},{'params':ly},{'params':wy}],lr=hp_lr)
 train_lr_scheduler=optim.lr_scheduler.MultiStepLR(train_optimizer,milestones=[80,120,150,180],gamma=0.1)
 
 
