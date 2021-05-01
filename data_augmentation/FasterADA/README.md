@@ -1,4 +1,4 @@
-# Faster AutoAugment (For this project, this readme is different from original author)
+# Faster AutoAugment (For this project, this readme is different from original author, although the orginial is reimplement version)
 
 This is the official *re*implementation of FasterAutoAugment ([hataya2020a](https://arxiv.org/abs/1911.06987).)
 
@@ -37,7 +37,7 @@ Or you can refer to the shell script for batch running in slurm
 ## Notice
 
 The codebase here is not exactly the same as the one used in the paper. 
-For example, this codebase does not include the support for `DistributedDataParallel` and the custom `CutOut` kernel. 
+For example, this codebase does not include the support for `DistributedDataParallel` and the custom `CutOut` kernel. (This part is same as original auther, the auther said the simpler version now is more stable). 
 
 The data loader here is the simple version of setting up experiements, if you want to be aligened with the original library setting as the author, you need to go to
 ```
