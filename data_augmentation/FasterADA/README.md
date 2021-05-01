@@ -61,6 +61,8 @@ def change_2_long_tail(train_set,
 
 And change the get_dataloader method, detailed part you can read the example code in the folder, datasets_example.py
 
+If you want to add the new metric for evaluating, you should also go to ```callbacks.py``` in library humora to modify it
+
 ## Other:
 From now, the individualized ADA used two methods:  
 Option 1 : at every iteration seperate the data by class to different policies and train them.  
