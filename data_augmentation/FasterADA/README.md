@@ -1,4 +1,4 @@
-# Faster AutoAugment
+# Faster AutoAugment (For this project, not original author)
 
 This is the official *re*implementation of FasterAutoAugment ([hataya2020a](https://arxiv.org/abs/1911.06987).)
 
