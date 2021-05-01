@@ -11,7 +11,7 @@ This is the official *re*implementation of FasterAutoAugment ([hataya2020a](http
 * `homura==2020.07` # `pip install -U git+https://github.com/moskomule/homura@v2020.07`
 * `hydra==0.11` 
 
-If there are issue with the visionset in the TraceBack information, you can refer here:
+If there are issue with the visionset in the TraceBack Error information, you can refer here:
 
 https://github.com/moskomule/dda/issues/7
 
