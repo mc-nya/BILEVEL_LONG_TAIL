@@ -57,7 +57,7 @@ def change_2_long_tail(train_set,
 
 And change the get_dataloader method, detailed part you can read the example code in the folder, datasets_example.py
 
-#Other:
+## Other:
 From now, the individualized ADA used two methods:  
 Option 1 : at every iteration seperate the data by class to different policy and train it.  
 Option 2 : seperated majority, minority at first, and upsampling if needed, then traing two of them at two different batch.  
