@@ -39,7 +39,10 @@ Or you can refer to the shell script for batch running in slurm
 The codebase here is not exactly the same as the one used in the paper. 
 For example, this codebase does not include the support for `DistributedDataParallel` and the custom `CutOut` kernel. 
 
-The data loader here is the simple version of setting up experiements, if you want to be aligened with the original library setting as the author, you need to go to envs/{your_env_name}/lib/{your_python_version_at_the_env}/site-packages/homura/vision/data/datasets.py to modify it (if you used conda).  
+The data loader here is the simple version of setting up experiements, if you want to be aligened with the original library setting as the author, you need to go to
+```
+envs/{your_env_name}/lib/{your_python_version_at_the_env}/site-packages/homura/vision/data/datasets.py to modify it (if you used conda).  
+```
 For example, adding under class VisionSet:
 ```
 @staticmethod
