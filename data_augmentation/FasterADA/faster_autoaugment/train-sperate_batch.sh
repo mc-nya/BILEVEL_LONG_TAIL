@@ -11,4 +11,5 @@
 #SBATCH --mail-type=FAIL
 source ~/.bashrc
 conda activate py38
+python search.py data.name=cifar10 data.download=true 
 python train.py path=/home/csgrad/ychan/dda/faster_autoaugment/policy_weights/cifar10 +first_append=/policy1/19.pt +second_append=/policy2/19.pt data.name=cifar10 model.name=wrn40_2 data.download=true
