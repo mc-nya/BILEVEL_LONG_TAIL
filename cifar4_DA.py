@@ -25,25 +25,25 @@ device = "cuda"
 import argparse
 parser=argparse.ArgumentParser()
 parser.add_argument('--model', dest='model', default='ResNet32', type=str)
-parser.add_argument('--dataset', dest='dataset', default='Cifar10', type=str)
-parser.add_argument('--batch_size', dest='batch_size', default=128, type=int)
+parser.add_argument('--dataset', dest='dataset', default='Cifar4', type=str)
+parser.add_argument('--batch_size', dest='batch_size', default=64, type=int)
 parser.add_argument('--lr', dest='lr', default=0.1, type=float)
-parser.add_argument('--arch_lr', dest='arch_lr', default=0.03, type=float)
+parser.add_argument('--arch_lr', dest='arch_lr', default=0.003, type=float)
 parser.add_argument('--log_interval', dest='log_interval', default=50, type=int)
-parser.add_argument('--checkpoint_interval', dest='checkpoint_interval', default=40, type=int)
+parser.add_argument('--checkpoint_interval', dest='checkpoint_interval', default=30, type=int)
 parser.add_argument('--model_file', dest='model_file', default=None, type=str)
 parser.add_argument('--save_path', dest='save_path', default=None, type=str)
-parser.add_argument('--epoch', dest='epoch', default=400, type=int)
+parser.add_argument('--epoch', dest='epoch', default=200, type=int)
 parser.add_argument('--train_rho', dest='train_rho', default=0.1, type=float)
-parser.add_argument('--ARCH_EPOCH', dest='ARCH_EPOCH', default=80, type=int)
-parser.add_argument('--ARCH_END', dest='ARCH_END', default=370, type=int)
-parser.add_argument('--ARCH_INTERVAL', dest='ARCH_INTERVAL', default=10, type=int)
-parser.add_argument('--ARCH_TRAIN_SAMPLE', dest='ARCH_TRAIN_SAMPLE', default=10, type=int)
-parser.add_argument('--ARCH_VAL_SAMPLE', dest='ARCH_VAL_SAMPLE', default=10, type=int)
+parser.add_argument('--ARCH_EPOCH', dest='ARCH_EPOCH', default=500, type=int)
+parser.add_argument('--ARCH_END', dest='ARCH_END', default=500, type=int)
+parser.add_argument('--ARCH_INTERVAL', dest='ARCH_INTERVAL', default=40, type=int)
+parser.add_argument('--ARCH_TRAIN_SAMPLE', dest='ARCH_TRAIN_SAMPLE', default=20, type=int)
+parser.add_argument('--ARCH_VAL_SAMPLE', dest='ARCH_VAL_SAMPLE', default=20, type=int)
 parser.add_argument('--ARCH_EPOCH_INTERVAL', dest='ARCH_EPOCH_INTERVAL', default=1, type=int)
-parser.add_argument('--dy', dest='dy', default='True', type=str)
-parser.add_argument('--ly', dest='ly', default='True', type=str)
-parser.add_argument('--checkpoint', dest='checkpoint', default=0, type=int)
+parser.add_argument('--dy', dest='dy', default='False', type=str)
+parser.add_argument('--ly', dest='ly', default='False', type=str)
+parser.add_argument('--augmentation', dest='augmentation', default='weak', type=str)
 args=parser.parse_args()
 
 args.dy=args.dy=='True'
@@ -68,11 +68,47 @@ if dataset=='Cifar10':
 elif dataset=='Cifar100':
         from dataset.cifar100 import load_cifar100 as  load_dataset
         num_classes=100
+elif dataset=='Cifar4':
+        from dataset.cifar2 import load_cifar2 as  load_dataset
+        num_classes=4
+
+if args.augmentation=='weak':
+        weak_aug=None
+        strong_aug=None
+else:
+        image_size=32
+        from torchvision.transforms import Compose, RandomCrop, Pad, RandomHorizontalFlip, Resize, RandomAffine
+        from torchvision.transforms import ToTensor, Normalize,RandomRotation,ColorJitter,RandomApply
+        from torchvision.transforms import RandomGrayscale,RandomResizedCrop,RandomErasing
+        from PIL.Image import BICUBIC
+        
+        weak_aug= Compose([
+            RandomCrop(32,padding=4),
+            Resize(image_size, BICUBIC),
+            RandomHorizontalFlip(),
+            ToTensor(),
+            Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2470, 0.2435, 0.2616])
+        ])
+        strong_aug= Compose([
+            RandomCrop(32,padding=4),
+            Resize(image_size, BICUBIC),
+            RandomHorizontalFlip(),
+            #RandomApply(torch.nn.ModuleList([ColorJitter()]),p=0.3),
+            #RandomGrayscale(p=0.3),
+            #RandomResizedCrop(image_size,scale=(0.08,0.5)),
+            #RandomRotation(20),
+        
+            ToTensor(),
+            
+            Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2470, 0.2435, 0.2616]),
+            RandomErasing(p=0.5,scale=(0.2,0.5))
+        ])
+        #weak_aug=strong_aug
 
 if network_model=='Efficient':
         from models.EfficientNet_NEW import EfficientNet
         model=EfficientNet.from_pretrained('efficientnet-b0',load_weights=False,num_classes=num_classes)
-        train_loader,val_loader,test_loader,eval_train_loader,eval_val_loader,num_train_samples,num_val_samples=load_dataset(batch_size=batch_size,train_rho=train_rho)
+        train_loader,val_loader,test_loader,eval_train_loader,eval_val_loader,num_train_samples,num_val_samples=load_dataset(batch_size=batch_size,train_rho=train_rho,image_size=224)
 elif network_model=='ResNet20':
         from models.ResNet import ResNet20
         model=ResNet20(num_classes=num_classes)
@@ -80,85 +116,76 @@ elif network_model=='ResNet20':
 elif network_model=='ResNet32':
         from models.ResNet import ResNet32
         model=ResNet32(num_classes=num_classes)
-        train_loader,val_loader,test_loader,eval_train_loader,eval_val_loader,num_train_samples,num_val_samples=load_dataset(val_size=10,batch_size=batch_size,train_rho=train_rho,image_size=32)
+        train_loader,val_loader,test_loader,eval_train_loader,eval_val_loader,num_train_samples,num_val_samples=load_dataset(batch_size=batch_size,train_rho=train_rho,image_size=32,weak_transform=weak_aug,strong_transform=strong_aug,num_classes=num_classes)
 
 print_num_params(model)
 
-if args.checkpoint!=0:
-        model.load_state_dict(torch.load(f'{args.save_path}/epoch_{args.checkpoint}.pth'))
+
 
 model = model.to(device)
 
 criterion = nn.CrossEntropyLoss()
 
-
-pi=num_train_samples/np.sum(num_train_samples)
-tau=1.5
-print(pi)
-pi=tau*log(pi)
-print(pi)
-#optimizer = optim.SGD(params=model.parameters(),lr=lr, momentum=0.9, weight_decay=1e-3, nesterov=True)
-#ly=torch.tensor(pi).cuda()
-#val_optimizer = optim.SGD(params=[{'params':dy},{'params':ly}],lr=hp_lr, momentum=0.9, nesterov=True)
-#computed_dy=[1.9738, 1.6991, 1.4067, 1.0689, 0.8530, 0.6294, 0.4417, 0.4953, 0.4201,0.3912]
 dy=torch.ones([num_classes],dtype=torch.float32,device=device)#+torch.rand([num_classes],dtype=torch.float32,device=device)*arch_lr
-#dy=torch.tensor(computed_dy).cuda()
 ly=torch.zeros([num_classes],dtype=torch.float32,device=device)
-#ly=torch.tensor(pi).cuda()
 #ly=torch.rand([num_classes],dtype=torch.float32,device=device)*arch_lr
 wy=torch.ones([num_classes],dtype=torch.float32,device=device)
 dy.requires_grad=args.dy
 ly.requires_grad=args.ly
 #wy.requires_grad=True
 
+from core.augmentation.augmentation import augment_dict
+print(augment_dict)
+aug_p=torch.ones([len(augment_dict)],dtype=torch.float32,device=device)/len(augment_dict)
+print(aug_p)
+aug_p.requires_grad=True
+aug_u=torch.ones([len(augment_dict)],dtype=torch.float32,device=device)/len(augment_dict)
+print(aug_u)
+aug_u.requires_grad=True
+
+
 train_optimizer = optim.SGD(params=model.parameters(),lr=lr,momentum=0.9,weight_decay=1e-4)
-val_optimizer = optim.SGD(params=[{'params':dy},{'params':ly},{'params':wy}],
-                        lr=arch_lr,momentum=0.9,weight_decay=1e-4)
-train_lr_scheduler=optim.lr_scheduler.MultiStepLR(train_optimizer,milestones=[280,330],gamma=0.1)
-val_lr_scheduler=optim.lr_scheduler.MultiStepLR(val_optimizer,milestones=[280,330],gamma=0.2)
+val_optimizer = optim.SGD(params=[{'params':dy},{'params':ly},{'params':wy}],lr=arch_lr)
+train_lr_scheduler=optim.lr_scheduler.MultiStepLR(train_optimizer,milestones=[80,120,150],gamma=0.1)
+val_lr_scheduler=optim.lr_scheduler.MultiStepLR(val_optimizer,milestones=[40,60,100,150],gamma=0.1)
 
 if args.save_path is None:
         import time
         args.save_path=f'./results/{int(time.time())}'       
 if not os.path.exists(args.save_path):
         os.makedirs(args.save_path)
+logfile=open(f'{args.save_path}/logs.txt',mode='w')
+dy_log=open(f'{args.save_path}/dy.txt',mode='w')
+ly_log=open(f'{args.save_path}/ly.txt',mode='w')
+acc_log=open(f'{args.save_path}/acc.txt',mode='w')
+config_log=open(f'{args.save_path}/config.txt',mode='w')
+for k,v in vars(args).items():
+	config_log.write(str(k)+' '+str(v)+'\n')
+config_log.close()
 
-if args.checkpoint==0:
-        torch.save(model,f'{args.save_path}/init_model.pth')
-        logfile=open(f'{args.save_path}/logs.txt',mode='w')
-        dy_log=open(f'{args.save_path}/dy.txt',mode='w')
-        ly_log=open(f'{args.save_path}/ly.txt',mode='w')
-        acc_log=open(f'{args.save_path}/acc.txt',mode='w')
-        config_log=open(f'{args.save_path}/config.txt',mode='w')
-        for k,v in vars(args).items():
-                config_log.write(str(k)+' '+str(v)+'\n')
-        config_log.close()
-else:
-        logfile=open(f'{args.save_path}/logs.txt',mode='a')
-        dy_log=open(f'{args.save_path}/dy.txt',mode='a')
-        ly_log=open(f'{args.save_path}/ly.txt',mode='a')
-        acc_log=open(f'{args.save_path}/acc.txt',mode='a')
-        config_log=open(f'{args.save_path}/config.txt',mode='a')
-        for k,v in vars(args).items():
-                config_log.write(str(k)+' '+str(v)+'\n')
-        config_log.close()
-for i in range(0,args.checkpoint):
-        train_lr_scheduler.step()
-        val_lr_scheduler.step()
-for i in range(args.checkpoint+1,total_epoch+1):
-        text,loss,train_acc=eval_epoch(eval_train_loader,model,loss_adjust_cross_entropy,i,' train_dataset',params=[dy,ly,wy],num_classes=num_classes,class_wise=True)
+torch.save(model,f'{args.save_path}/init_model.pth')
+for i in range(total_epoch+1):
+        
+        text,loss,train_acc=eval_epoch(eval_train_loader,model,cross_entropy,i,' train_dataset',params=[dy,ly,wy],num_classes=num_classes)
         logfile.write(text+'\n')
-        text,loss,val_acc=eval_epoch(val_loader,model,cross_entropy,i,' val_dataset',params=[dy,ly,wy],logit_adjust=None,num_classes=num_classes,class_wise=True)
+        text,loss,val_acc=eval_epoch(val_loader,model,cross_entropy,i,' val_dataset',params=[dy,ly,wy],logit_adjust=None,num_classes=num_classes)
         logfile.write(text+'\n')
         text,loss,test_acc=eval_epoch(test_loader,model,cross_entropy,i,' test_dataset',params=[dy,ly,wy],logit_adjust=None,num_classes=num_classes,class_wise=True)
         logfile.write(text+'\n')
         print(dy,ly,'\n')
+
+        # train_epoch(i, model, 
+        #         in_loader=train_loader, in_criterion=cross_entropy, 
+        #         in_optimizer=train_optimizer,in_params=[None,None,None,augment_dict,aug_p,aug_u],
+        #         is_out=False,
+        #         num_classes=num_classes)
         train_epoch(i, model, 
-                in_loader=train_loader, in_criterion=loss_adjust_cross_entropy, 
+                in_loader=train_loader, in_criterion=cross_entropy, 
                 in_optimizer=train_optimizer,in_params=[dy,ly],
                 is_out=(i>=ARCH_EPOCH) and (i<=ARCH_END) and ((i+1)%ARCH_EPOCH_INTERVAL)==0, 
                 out_loader=val_loader, out_optimizer=val_optimizer,
-                out_criterion=cross_entropy, out_logit_adjust=None, out_params=[dy,ly],
+                out_criterion=cross_entropy, out_logit_adjust=logit_adjust_ly, out_params=[dy,ly],
+                out_posthoc=True,
                 num_classes=num_classes,
                 ARCH_EPOCH=ARCH_EPOCH,ARCH_INTERVAL=ARCH_INTERVAL,
                 ARCH_TRAIN_SAMPLE=ARCH_TRAIN_SAMPLE,ARCH_VAL_SAMPLE=ARCH_VAL_SAMPLE)
@@ -171,7 +198,6 @@ for i in range(args.checkpoint+1,total_epoch+1):
         ly_log.flush()
         acc_log.flush()
         train_lr_scheduler.step()
-        val_lr_scheduler.step()
         if i%args.checkpoint_interval==0:
                 torch.save(model,f'{args.save_path}/epoch_{i}.pth')
 logfile.close()
@@ -179,10 +205,3 @@ dy_log.close()
 ly_log.close()
 acc_log.close()
 torch.save(model,f'{args.save_path}/loss_adjustment.pth')
-
-
-
-
-
-
-

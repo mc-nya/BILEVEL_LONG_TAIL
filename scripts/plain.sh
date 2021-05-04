@@ -1,3 +1,3 @@
 source ~/.bashrc
 conda activate pytorch
-python bilevel_loss_adjust.py --lr 0.01 --arch_lr 0.003 --save_path ./results/plain --ly False --dy False --train_rho 0.1 --ARCH_EPOCH 300
+python plain_training.py --dataset Cifar100 --lr 0.1 --batch_size 128 --arch_lr 0.003 --epoch 300 --save_path ./results/plain_cifar100 --train_rho 0.01

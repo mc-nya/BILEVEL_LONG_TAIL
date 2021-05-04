@@ -6,64 +6,87 @@ import PIL, PIL.ImageOps, PIL.ImageEnhance, PIL.ImageDraw
 import numpy as np
 import torch
 from torchvision.transforms.transforms import Compose
-
+import torchvision.transforms.functional as TFF
 random_mirror = True
 
+def ReBern(p,u,la):
+    x=1./la(torch.log(p/(1.-p))+torch.log(u/1-u))
+    return 1./(1.+torch.exp(-x))
+# def ShearX(img, v):  # [-0.3, 0.3]
+#     assert -0.3 <= v <= 0.3
+#     if random_mirror and random.random() > 0.5:
+#         v = -v
+#     return img.transform(img.size, PIL.Image.AFFINE, (1, v, 0, 0, 1, 0))
+def ShearX(img, p,u,la):  # [-0.3, 0.3]
+    b=ReBern(p,u,la)
+    ret=b*TFF.affine(img,0,0,0,(u,0))+(1-b)*img
+    return ret
 
-def ShearX(img, v):  # [-0.3, 0.3]
-    assert -0.3 <= v <= 0.3
-    if random_mirror and random.random() > 0.5:
-        v = -v
-    return img.transform(img.size, PIL.Image.AFFINE, (1, v, 0, 0, 1, 0))
+def ShearY(img, p,u,la):  # [-0.3, 0.3]
+    b=ReBern(p,u,la)
+    ret=b*TFF.affine(img,0,0,0,(0,u))+(1-b)*img
+    return ret
+# def ShearY(img, v):  # [-0.3, 0.3]
+#     assert -0.3 <= v <= 0.3
+#     if random_mirror and random.random() > 0.5:
+#         v = -v
+#     return img.transform(img.size, PIL.Image.AFFINE, (1, 0, 0, v, 1, 0))
 
+def TranslateX(img, p,u,la):  # [-150, 150] => percentage: [-0.45, 0.45]
+    b=ReBern(p,u,la)
+    ret=b*TFF.affine(img,0,[u,0],0,0)+(1-b)*img
+    return ret
 
-def ShearY(img, v):  # [-0.3, 0.3]
-    assert -0.3 <= v <= 0.3
-    if random_mirror and random.random() > 0.5:
-        v = -v
-    return img.transform(img.size, PIL.Image.AFFINE, (1, 0, 0, v, 1, 0))
-
-
-def TranslateX(img, v):  # [-150, 150] => percentage: [-0.45, 0.45]
-    assert -0.45 <= v <= 0.45
-    if random_mirror and random.random() > 0.5:
-        v = -v
-    v = v * img.size[0]
-    return img.transform(img.size, PIL.Image.AFFINE, (1, 0, v, 0, 1, 0))
-
-
-def TranslateY(img, v):  # [-150, 150] => percentage: [-0.45, 0.45]
-    assert -0.45 <= v <= 0.45
-    if random_mirror and random.random() > 0.5:
-        v = -v
-    v = v * img.size[1]
-    return img.transform(img.size, PIL.Image.AFFINE, (1, 0, 0, 0, 1, v))
-
-
-def TranslateXAbs(img, v):  # [-150, 150] => percentage: [-0.45, 0.45]
-    assert 0 <= v <= 10
-    if random.random() > 0.5:
-        v = -v
-    return img.transform(img.size, PIL.Image.AFFINE, (1, 0, v, 0, 1, 0))
-
-
-def TranslateYAbs(img, v):  # [-150, 150] => percentage: [-0.45, 0.45]
-    assert 0 <= v <= 10
-    if random.random() > 0.5:
-        v = -v
-    return img.transform(img.size, PIL.Image.AFFINE, (1, 0, 0, 0, 1, v))
+def TranslateY(img, p,u,la):  # [-150, 150] => percentage: [-0.45, 0.45]
+    b=ReBern(p,u,la)
+    ret=b*TFF.affine(img,0,[0,u],0,0)+(1-b)*img
+    return ret
+# def TranslateX(img, v):  # [-150, 150] => percentage: [-0.45, 0.45]
+#     assert -0.45 <= v <= 0.45
+#     if random_mirror and random.random() > 0.5:
+#         v = -v
+#     v = v * img.size[0]
+#     return img.transform(img.size, PIL.Image.AFFINE, (1, 0, v, 0, 1, 0))
 
 
-def Rotate(img, v):  # [-30, 30]
-    assert -30 <= v <= 30
-    if random_mirror and random.random() > 0.5:
-        v = -v
-    return img.rotate(v)
+# def TranslateY(img, v):  # [-150, 150] => percentage: [-0.45, 0.45]
+#     assert -0.45 <= v <= 0.45
+#     if random_mirror and random.random() > 0.5:
+#         v = -v
+#     v = v * img.size[1]
+#     return img.transform(img.size, PIL.Image.AFFINE, (1, 0, 0, 0, 1, v))
 
 
-def AutoContrast(img, _):
-    return PIL.ImageOps.autocontrast(img)
+# def TranslateXAbs(img, v):  # [-150, 150] => percentage: [-0.45, 0.45]
+#     assert 0 <= v <= 10
+#     if random.random() > 0.5:
+#         v = -v
+#     return img.transform(img.size, PIL.Image.AFFINE, (1, 0, v, 0, 1, 0))
 
+
+# def TranslateYAbs(img, v):  # [-150, 150] => percentage: [-0.45, 0.45]
+#     assert 0 <= v <= 10
+#     if random.random() > 0.5:
+#         v = -v
+#     return img.transform(img.size, PIL.Image.AFFINE, (1, 0, 0, 0, 1, v))
+
+
+# def Rotate(img, v):  # [-30, 30]
+#     assert -30 <= v <= 30
+#     if random_mirror and random.random() > 0.5:
+#         v = -v
+#     return img.rotate(v)
+def Rotate(img, p,u,la):  
+    b=ReBern(p,u,la)
+    ret=b*TFF.rotate(img,u)+(1-b)*img
+    return ret
+
+# def AutoContrast(img, _):
+#     return PIL.ImageOps.autocontrast(img)
+def AutoContrast(img, p,u,la):  
+    b=ReBern(p,u,la)
+    ret=b*TFF.adjust_contrast(img,u)+(1-b)*img
+    return ret
 
 def Invert(img, _):
     return PIL.ImageOps.invert(img)
@@ -137,9 +160,9 @@ def CutoutAbs(img, v):  # [0, 60] => percentage: [0, 0.2]
     y1 = min(h, y0 + v)
 
     xy = (x0, y0, x1, y1)
-    color = (125, 123, 114)
+    color = (125, 123, 114) 
     # color = (0, 0, 0)
-    img = img.copy()
+    img = img.copy() 
     PIL.ImageDraw.Draw(img).rectangle(xy, color)
     return img
 
@@ -161,7 +184,7 @@ def augment_list(for_autoaug=True):  # 16 oeprations and their ranges
         (TranslateY, -0.45, 0.45),  # 3
         (Rotate, -30, 30),  # 4
         (AutoContrast, 0, 1),  # 5
-        (Invert, 0, 1),  # 6
+        #(Invert, 0, 1),  # 6
         (Equalize, 0, 1),  # 7
         (Solarize, 0, 256),  # 8
         (Posterize, 4, 8),  # 9
